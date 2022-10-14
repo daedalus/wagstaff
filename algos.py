@@ -8,9 +8,6 @@ def find_period_1p(p):
   return n
 
 
-print(find_period_1p(49))
-
-
 def A002371(L):
   A=[]
   p = 1
@@ -23,16 +20,8 @@ def A002371(L):
   return A
 
 
-print(A002371(100))
-
-
 def congruence(a,b,p):
   return ((a-b) % p) == 0
-
-
-print(congruence(0,14,7))
-print(congruence(7,14,7))
-print(congruence(14,7,7))
 
 
 from functools import reduce
@@ -54,10 +43,6 @@ def fastpowmod(n, e, m):
   return y % m
 
 
-print(fastpowmod(4,14,5))
-print(pow(4,14,5))
-
-
 def _invert(n, p):
   return fastpowmod(n, p - 2, p)
 
@@ -75,23 +60,18 @@ def CRT(c,m):
   return S % M
 
 
-print(CRT([4,24],[7,103]))
-print(CRT([2,3,2],[3,5,7]))
-
-
 def euler_criterion_is_prime(p):
   return fastpowmod(2, p - 1, p) == 1
 
-
-print(euler_criterion_is_prime(162167))
-
-
+    
 def phi(n):
   """ Slow version of euler totient function """
-  return sum(1 for i in range(1,n) if gcd(n,i) == 1)
-    
+  if is_prime(n):
+    return n - 1
+  return sum([1 for i in range(1, n) if gcd(i, n) == 1])
 
-def _primitiveroot(m):
+
+def primitiveroot(m):
   t = phi(m)
   g = 0
   return sum(1 for g in range(2, t) if fastpowmod(g, t, m) == 1)
@@ -104,19 +84,10 @@ def primitiveroots(m):
   return phi(phi(m))
 
 
-m=5
-print(phi(m))
-print(_primitiveroot(m))
-print(primitiveroots(m))
-
-
 def A010554(L):
   return [1,1] + [primitiveroots(i) for i in range(3, L + 1)]
+
     
-
-print(A010554(100))
-
-
 def Carmichael(n):
   """ Carmichael lambda function """
   if n == 1: return 1
@@ -130,9 +101,6 @@ def Carmichael(n):
 
 def A00(L):
   return [ Carmichael(i) for i in range(1, L + 1)]
-
-
-print(A00(100))
 
 
 def Legendre(a, p):
@@ -160,7 +128,8 @@ def tonelli(r,p):
         e += 1
    
     if e == 1:
-      return pow(r, (p + 1) >> 2, p)
+      x = pow(r, (p + 1) >> 2, p)
+      return x, p - x
 
     for n in range(2, p):
         if legendre(n, p) == -1:
@@ -195,24 +164,223 @@ def verify_tonelli(x, r, p):
   assert (((x[1] ** 2) - r) % p) == 0
 
 
-
-x = tonelli(50, 73)
-verify_tonelli(x, 50, 73)
-print(x)
-x = tonelli(5, 41)
-verify_tonelli(x, 5, 41)
-print(x)
+def hensel_lift(x, r, p):
+  t = invert(x << 1, p) * ((r - x ** 2) // p)
+  y = x + t * p
+  return y
 
 
-def tonelli_pe(r, p):
+def tonelli_p2(r, p):
   """ WIP """
   x = tonelli(r, p)
-  t0 ≡ (2x[0])−1((r - x[0] ** 2) / p) 
-  t1 ≡ (2x[1])−1((r - x[1] ** 2) / p) 
+  y = hensel_lift(x[0], r, p)
+  p2 = p * p
+  return y, (p2 - y) % (p2)
 
-  y0 = x0 + t0 * p
-  y1 = x1 + t1 * p
 
-  return y0,y1
+def PHI(x,p):
+  return (x**p -1) // (x-1)
+
+
+def _isqrt(n):
+  x = 2 ** (int(log2(n)) >> 1)
+  y = (x + n//x) >> 1
+  while y < x:
+    x = y
+    y = (x + n//x) >> 1
+  return x
+
+
+def fermat(n):
+    assert (n-2) % 4 != 0
+    a = _isqrt(n)
+    t = (a << 1) + 1
+    b2 = a*a - n
+    while not is_square(b2):
+        b2 += t
+        t += 2
+    a = (t - 1) >> 1
+    b = _isqrt(b2)
+    return a - b, a + b
+
+
+
+def cuberoot(n):
+  b, _ = iroot(n,3)
+  return b
+
+def harts(N):
+  """ 
+  Harts one line attack 
+  taken from wagstaff the joy of factoring
+  """
+  #for i in range(1, cuberoot(N)):
+  m = 2
+  i = 1
+  while not is_square(m):
+    s = isqrt(N * i) + 1
+    m = pow(s, 2, N)
+    i += 1
+  t = isqrt(m)
+  g = gcd(s - t, N)
+  return g, N // g
+  
+
+def find_prime(a, b):
+  p = 0
+  c = 1
+  while not is_prime(p):
+    p = a**b + c
+    c += 1
+  return p
+
+
+def lehman(N, k, r):
+  Nk4 = (k*N) << 2
+  x = isqrt(Nk4) + 1
+  u = x*x - Nk4
+  j = (isqrt(N // k) - 1) // ((r + 1) << 2)
+  if (x - k) & 1 == 0:
+    i1 = 1
+    u += (x << 1) + 1
+    x += 1
+  w = 2
+  if (k-1) & 1 == 0:
+    w = 4
+    if (x - k + N) % 4 == 0:
+      i1 += 2
+      u += (x + 1) << 2
+      x += 2
+   
+  for i in range(i1, j + 1, w):
+    if is_square(u):
+      y = isqrt(u)
+      g = gcd(x-y, N) 
+      return g, N // g
+    if (k-1) & 1 == 0:
+      u += (x+2) << 3 
+      x += 4
+    else:
+      u += (x + 1) << 2
+      x += 2
+  
+  
+#n = 13
+#while True:
+#  print("n",n)
+#  try:
+#    print(lehman(299944727,12,n))
+#    break
+#  except:
+#    pass
+#  n += 1
+
+import math
+def _is_power(n):
+  if (n == 1):
+    return True
+  i = 2
+  while(i * i <= n):
+    val = math.log(n) / math.log(i)
+    if val == int(val):
+      return True
+    i += 1
+  return False
+ 
+def is_cunningham(n):
+  return is_power(n-1) or is_power(n+1)
+
+def A080262(L):
+  return [i for i in range(3, L + 1) if is_cunningham(i)]
+
+
+
+def A0(L):
+ return [phi(i) for i in range(3, L + 1) if is_cunningham(i)]
+
+
+
+#def is_cunningham(n):
+#  return is_power(n-1) or is_power(n+1)
+
+#def A(L):
+# return [int(phi(i)) for i in range(3, L + 3 + 1) if is_cunningham(i)]
+#print(A(200))
+
+def _cunningham_pm1(n):
+  if is_power(n-1):
+    return 1
+  if is_power(n+1):
+    return -1
+  return 0
+
+import math
+def basepow(n):
+  base = 2
+  while (base * base <= n):
+    power = log(n) / log(base)
+    if (abs(power - int(power))) < 0.00000001:
+      return base, int(power)
+    base += 1
+
+def cunningham_decompose(n):
+  pm1 = _cunningham_pm1(n)
+  if pm1 != 0:
+    base, power = basepow(n - pm1)
+    return base, power, pm1
+
+
+#print(cunningham_decompose((2 ** 58) + 1))
+
+def factor_special_forms(n):
+  bpm1 = cunningham_decompose(n)
+  #print(n, bpm1)
+  if bpm1 != None:
+    base, power, pm1 = bpm1 
+    if (base == 2) and (power + 2) % 4 == 0:
+      j = (power + 2) >> 2
+      j2 = 1 << j 
+      j221 = (1 << ((2 * j) - 1)) 
+      return j221 - j2 + 1, j221 + j2 + 1
+    #b^2m − 1 = (b m − 1)(b m + 1)
+    if power & 1 == 0 and pm1 == - 1:
+      p2 = power >> 1
+      bp2 = base ** p2
+      return bp2 - 1, bp2 + 1
+    #
+    if power == 3:
+      return base + 1, base ** 2 - base + 1
+    #  
+    if base == 3:
+      j = 0
+      x = 0
+      while x != power:
+        j+=1 
+        x = 3 * ((j << 1) - 1)
+      j21 = (j << 1) - 1
+      bj21 = base ** j21
+      bj = base ** j
+      return bj21 - bj + 1, bj21 + bj +1
+  return []
+  
+
+
+from gmpy2 import *
+import random
+
+def is_carmichael(n, k = 50):
+  if is_prime(n):
+    return False
+  for i in range(0,k):
+    a = random.randint(2, n - 1)
+    if gcd(a,n) == 1:
+      if not is_fermat_prp(n, a):
+        return False
+  return True
+
+
+def A002997(L):
+  return [i for i in range(3, L) if is_carmichael(i)]
+
 
 
