@@ -52,4 +52,6 @@ def test2():
   print(factor_special_forms(7625597484988))
   #print(factor_special_forms(1023490369077469249537))
 
-test2()
+#test2()
+
+print(factor_special_forms(2**11-1))

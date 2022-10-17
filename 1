@@ -1,0 +1,11 @@
+from gmpy2 import *
+
+def express(p):
+  f = 1
+  e = int(log2(p))  
+  while (p-1 != (2**e) * f):
+    print(p-1,(2**e)*f)
+    f+=2
+  return f
+
+print(express(41))

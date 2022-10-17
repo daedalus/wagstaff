@@ -319,51 +319,128 @@ def basepow(n):
   base = 2
   while (base * base <= n):
     power = log(n) / log(base)
-    if (abs(power - int(power))) < 0.00000001:
-      return base, int(power)
+    ipower = int(power)
+    if (abs(power - ipower)) < 0.00000001 and pow(base, ipower, n) == 0:
+      return base, ipower
     base += 1
 
 def cunningham_decompose(n):
   pm1 = _cunningham_pm1(n)
   if pm1 != 0:
     base, power = basepow(n - pm1)
-    return base, power, pm1
-
+    if base ** power + pm1 == n:
+      return base, power, pm1
+    else:
+      return None
 
 #print(cunningham_decompose((2 ** 58) + 1))
 
-def factor_special_forms(n):
-  bpm1 = cunningham_decompose(n)
-  #print(n, bpm1)
-  if bpm1 != None:
-    base, power, pm1 = bpm1 
-    if (base == 2) and (power + 2) % 4 == 0:
-      j = (power + 2) >> 2
-      j2 = 1 << j 
-      j221 = (1 << ((2 * j) - 1)) 
-      return j221 - j2 + 1, j221 + j2 + 1
-    #b^2m − 1 = (b m − 1)(b m + 1)
-    if power & 1 == 0 and pm1 == - 1:
-      p2 = power >> 1
-      bp2 = base ** p2
-      return bp2 - 1, bp2 + 1
-    #
-    if power == 3:
-      return base + 1, base ** 2 - base + 1
-    #  
-    if base == 3:
-      j = 0
-      x = 0
-      while x != power:
-        j+=1 
-        x = 3 * ((j << 1) - 1)
-      j21 = (j << 1) - 1
-      bj21 = base ** j21
-      bj = base ** j
-      return bj21 - bj + 1, bj21 + bj +1
-  return []
-  
 
+def factor_leyland(N, L=100):
+  for i in range(2, L + 1):
+    for j in range(2, L + 1):
+      a = i ** j 
+      b = j ** i
+      P,Q = (a + b), (a - b)
+      n = P * Q
+      if n == N:
+        return [P, Q]
+  return []
+    
+def factor_special_forms(n):
+
+  if is_prime(n):
+    print("Prime found:",n)
+    return [n]
+  if n == 1:
+    return [1] 
+
+  print("factor_special_forms",n)
+
+ 
+  # Form x^2y-y^2x 
+  pq = factor_leyland(n, L = 100)
+  if pq != []:
+    print("Form x^2y-y^2x")
+    return factor_special_forms(pq[0]) + factor_special_forms(pq[1])
+  
+  bpm1 = cunningham_decompose(n)
+  if bpm1 != None:
+    base, power, pm1 = bpm1
+    if pm1 == -1:
+      print(base, "^", power,pm1)
+      # Form 2^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1) 
+      if base == 2 and is_prime(power) and (power - 3) % 4 == 0:
+        print("Form 2^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1)")
+        p2 = (power << 1) + 1
+        if is_prime(p2):
+          return [p2] + factor_special_forms(n // p2)
+        else:
+          return [n]
+      # Form b^2m − 1 = (b^m − 1)(b^m + 1)
+      if power & 1 == 0:
+        print("Form b^2m − 1 = (b^m − 1)(b^m + 1)")
+        p2 = power >> 1
+        bp2 = base ** p2
+        #print("here",p2 - 1,bp2 + 1)
+        return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
+        #return [(1 << p2)-1, bp2 + 1]
+      if is_prime(power):
+        print("form 2^p-1 where p is prime")
+        #p,q = base - 1, base ** 4 + base ** 3 + base ** 2 + base + 1
+        p = base - 1
+        q = 0
+        for i in range(0, power):
+          q += (base ** i)
+          #print(base,i)
+        #print(p,q)
+        if p > 1:
+          return factor_special_forms(p) + factor_special_forms(q)
+        else:
+          return p, q
+    else:
+      print(base, "^", power,"+",pm1)
+      if (2 ** int(log2(power)) == power):
+        print("Form base^(2^n) + 1")
+        return [n]
+      # Form 2^n + 1 where n = -2 (mod 4)
+      if (base == 2) and (power + 2) % 4 == 0:
+        print("Form 2^n + 1 where n = -2 (mod 4)")
+        j = (power + 2) >> 2
+        j2 = 1 << j 
+        j221 = (1 << ((2 * j) - 1)) 
+        return [j221 - j2 + 1, j221 + j2 + 1]
+      # pm1 == 1
+      # Form x^3+1 == > (x+1) * (x^2 - x + 1)
+      #if power == 3:
+      #  p, q = base + 1, base ** 2 - base + 1
+      #  return factor_special_forms(p) + factor_special_forms(q)
+      if is_prime(power):
+        print("base^p+1 where p is prime")
+        q = 0
+        p = base + 1
+        for i in range(0, power):
+          q += ((-1) ** i) *  (base ** i)
+      #  p,q = base + 1, base ** 4 - base ** 3 + base ** 2 - base + 1
+        if p > 1:
+          return factor_special_forms(p) + factor_special_forms(q)
+        else:
+          return p, q
+
+      #if base == 3:
+      #  j = 0
+      #  x = 0
+      #  while x != power and x <= n:
+      #    j += 1 
+      #    x = 3 * ((j << 1) - 1)
+      #    print(n, j, x)
+      #  j21 = (j << 1) - 1
+      #  bj21 = base ** j21
+      #  bj = base ** j
+      #  p, q = bj21 - bj + 1,  bj21 + bj +1
+      #  return [p, q]
+  return [n]
+  
 
 from gmpy2 import *
 import random
