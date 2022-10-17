@@ -346,43 +346,59 @@ def factor_leyland(N, L=100):
       if n == N:
         return [P, Q]
   return []
-    
-def factor_special_forms(n):
 
+
+def factor_perfect(n):
+  l = int(log2(n))
+  for i in range(l >> 1, l):
+    p = (1 << i)
+    q = n // p
+    if p*q == n:
+      return p, q
+  return []
+ 
+def factor_special_forms(n):
+  """
+  it will recursively factor numbers of the form b^m+-1 or x^2y-y^2x
+  """
   if is_prime(n):
     print("Prime found:",n)
     return [n]
   if n == 1:
-    return [1] 
-
+    return [] 
   print("factor_special_forms",n)
 
- 
+  pq = factor_perfect(n)
+  if pq != []:
+    print("Form (2^(p-1)*(2^p-1))")
+    return pq
+
   # Form x^2y-y^2x 
   pq = factor_leyland(n, L = 100)
   if pq != []:
     print("Form x^2y-y^2x")
     return factor_special_forms(pq[0]) + factor_special_forms(pq[1])
-  
   bpm1 = cunningham_decompose(n)
   if bpm1 != None:
     base, power, pm1 = bpm1
     if pm1 == -1:
       print(base, "^", power,pm1)
       # Form 2^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1) 
-      if base == 2 and is_prime(power) and (power - 3) % 4 == 0:
-        print("Form 2^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1)")
+      #if base == 2 and is_prime(power) and (power - 3) % 4 == 0:
+      if is_prime(power) and (power - 3) % 4 == 0:
+        print("Form base^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1)")
         p2 = (power << 1) + 1
+        print(p2)
         if is_prime(p2):
           return [p2] + factor_special_forms(n // p2)
         else:
-          return [n]
+          p = base-1; q = n//p
+          return [p] + [q]
       # Form b^2m − 1 = (b^m − 1)(b^m + 1)
       if power & 1 == 0:
         print("Form b^2m − 1 = (b^m − 1)(b^m + 1)")
         p2 = power >> 1
         bp2 = base ** p2
-        #print("here",p2 - 1,bp2 + 1)
         return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
         #return [(1 << p2)-1, bp2 + 1]
       if is_prime(power):
@@ -397,7 +413,7 @@ def factor_special_forms(n):
         if p > 1:
           return factor_special_forms(p) + factor_special_forms(q)
         else:
-          return p, q
+          return [p, q]
     else:
       print(base, "^", power,"+",pm1)
       if (2 ** int(log2(power)) == power):
@@ -409,7 +425,15 @@ def factor_special_forms(n):
         j = (power + 2) >> 2
         j2 = 1 << j 
         j221 = (1 << ((2 * j) - 1)) 
-        return [j221 - j2 + 1, j221 + j2 + 1]
+        p, q = j221 - j2 + 1, j221 + j2 + 1
+        tmp = []
+        while p % 5 == 0:
+          p //= 5
+          tmp += [5]
+        while q % 5 == 0:
+          q //= 5
+          tmp += [5]
+        return tmp + factor_special_forms(p) + factor_special_forms(q)
       # pm1 == 1
       # Form x^3+1 == > (x+1) * (x^2 - x + 1)
       #if power == 3:
@@ -421,12 +445,21 @@ def factor_special_forms(n):
         p = base + 1
         for i in range(0, power):
           q += ((-1) ** i) *  (base ** i)
-      #  p,q = base + 1, base ** 4 - base ** 3 + base ** 2 - base + 1
         if p > 1:
           return factor_special_forms(p) + factor_special_forms(q)
         else:
           return p, q
-
+      else:
+        if power & 1 == 1:
+          print("Form base^n + 1 where n is composite and odd") 
+          p = base + 1
+          q = n // p
+          return factor_special_forms(p) + factor_special_forms(q)
+        #else:
+        #  print("Form base^n + 1 where n is composite and even")
+        #  p = base**2 + 1
+        #  q = n // p
+        #  return factor_special_forms(p) + factor_special_forms(q)
       #if base == 3:
       #  j = 0
       #  x = 0
