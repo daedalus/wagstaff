@@ -349,29 +349,60 @@ def factor_leyland(N, L=100):
 
 
 def factor_perfect(n):
-  l = int(log2(n))
-  for i in range(l >> 1, l):
-    p = (1 << i)
-    q = n // p
-    if p*q == n:
-      return p, q
+  q = n
+  i = 0
+  while q % 2 == 0:
+    q >>= 1
+    i += 1
+  p = (1 << i)
+  if ((i << 1) + 1) == q:
+    return p, q, i
+  else:
+    return p, q, -1
   return []
- 
+
+
+def trial_factor(n):
+  factors=[]
+  tmp = n
+  p = 2
+  #for i in range(2, isqrt(n)+1):
+  while (p <= isqrt(n) + 1): 
+    if tmp % p == 0:
+      while tmp % p == 0:
+        tmp //= p
+      if is_prime(tmp):
+        factors += [p, tmp]
+      else:
+        factors.append(p)
+    p = next_prime(p)
+  return sorted(set(factors))
+
+
 def factor_special_forms(n):
   """
   it will recursively factor numbers of the form b^m+-1 or x^2y-y^2x
   """
+  if n == 1:
+    return [1] 
   if is_prime(n):
     print("Prime found:",n)
     return [n]
-  if n == 1:
-    return [] 
+  if is_square(n):
+    print("Square found:",n)
+    i2 = isqrt(n)
+    return [i2,i2]
   print("factor_special_forms",n)
 
-  pq = factor_perfect(n)
-  if pq != []:
-    print("Form (2^(p-1)*(2^p-1))")
-    return pq
+  #pqi = factor_perfect(n)
+  #if pqi != [] and pqi[0] > 1:
+  #  print(pqi)
+  #  if pqi[2] > 1:
+  #    print("Form (2^(p-1)*(2^p-1))")
+  #  #else:
+  #  #  print("Form (2^n)*q")
+  #    #return [pqi[0]] + factor_special_forms(pqi[1])
+  #    return [pqi[0], pqi[1]]
 
   # Form x^2y-y^2x 
   pq = factor_leyland(n, L = 100)
@@ -397,9 +428,15 @@ def factor_special_forms(n):
       # Form b^2m − 1 = (b^m − 1)(b^m + 1)
       if power & 1 == 0:
         print("Form b^2m − 1 = (b^m − 1)(b^m + 1)")
-        p2 = power >> 1
-        bp2 = base ** p2
-        return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
+        if power == 6:
+          print("(x-1)(x+1)(x^2-x+1)(x^2+x+1)")
+          b2 = base ** 2
+          p,q,r,s = base - 1, base + 1, b2 + base + 1, b2 - base +1 
+          return factor_special_forms(p) + factor_special_forms(q) + factor_special_forms(r) + factor_special_forms(s)
+        else:
+          p2 = power >> 1
+          bp2 = base ** p2
+          return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
         #return [(1 << p2)-1, bp2 + 1]
       if is_prime(power):
         print("form 2^p-1 where p is prime")
@@ -414,6 +451,26 @@ def factor_special_forms(n):
           return factor_special_forms(p) + factor_special_forms(q)
         else:
           return [p, q]
+      elif power > 2:
+        print("Form 2^n-1 with n composite and odd")
+        r = n
+        F = trial_factor(power)
+        p = base - 1
+        r //= p
+        Q=[]
+        #print(F)
+        for f in F:
+          #print(f)
+          q = 0
+          for i in range(0, f):
+            q += (base ** i)
+          print("Found prime:",q)
+          r //= q        
+          Q.append(q)
+        #print(Q)
+        #if p > 1:
+        return factor_special_forms(p) + Q + factor_special_forms(r)
+        
     else:
       print(base, "^", power,"+",pm1)
       if (2 ** int(log2(power)) == power):
@@ -472,8 +529,40 @@ def factor_special_forms(n):
       #  bj = base ** j
       #  p, q = bj21 - bj + 1,  bj21 + bj +1
       #  return [p, q]
-  return [n]
-  
+  #return [n]
+  pqi = factor_perfect(n)
+  if pqi != [] and pqi[0] > 1:
+      #print(pqi)
+      if pqi[2] > 1:
+        print("Form (2^(p-1)*(2^p-1))")
+        return [pqi[0], pqi[1]]
+      else:
+        print("Form (2^n)*q")
+        return [pqi[0]] + factor_special_forms(pqi[1])
+        #return [pqi[0], pqi[1]]
+  else:
+    return [n] 
+
+
+def parse_exp(exp):
+  if exp.find("-") > -1:
+    x = exp.split("-")
+    try:
+      A,B = eval(x[0]),eval(x[1])
+    except:
+      A,B = 0,0
+    if is_square(A) and is_square(B):
+      a,b = isqrt(A), isqrt(B)
+      return int(abs(a - b)), int(abs(a + b))  
+
+
+def FSF(exp):
+  n = int(eval(exp))
+  f = parse_exp(exp)
+  if f != None and (f[0] * f[1]) == n:
+    return f
+  else:
+    return factor_special_forms(n)
 
 from gmpy2 import *
 import random
