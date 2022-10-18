@@ -7,6 +7,7 @@ n = eval(exp)
 f = FSF(exp)
 n1 = list_prod(f)
 #print(n,f,n1)
+#print(f)
 assert n == n1
 print(f)
 

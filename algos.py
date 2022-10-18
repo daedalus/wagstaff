@@ -371,12 +371,11 @@ def trial_factor(n):
     if tmp % p == 0:
       while tmp % p == 0:
         tmp //= p
+        factors += [p]
       if is_prime(tmp):
-        factors += [p, tmp]
-      else:
-        factors.append(p)
+        factors += [tmp]
     p = next_prime(p)
-  return sorted(set(factors))
+  return sorted(factors)
 
 
 def factor_special_forms(n):
@@ -556,13 +555,71 @@ def parse_exp(exp):
       return int(abs(a - b)), int(abs(a + b))  
 
 
+def pollard_rho(n, seed=2, p=2, c=1, limit = 1000):
+  f = lambda x: powmod(x, p, n) + c
+  x, y, d = seed, seed, 1
+  C = 0
+  while d == 1 and C <= limit:
+    x = f(x)
+    y = f(f(y))
+    d = gcd((x - y), n)
+    if n > d > 1:
+      return d
+    C += 1
+  return n
+
+
 def FSF(exp):
+  c = 10
   n = int(eval(exp))
-  f = parse_exp(exp)
-  if f != None and (f[0] * f[1]) == n:
-    return f
+  F = parse_exp(exp)
+  if F != None and (F[0] * F[1]) == n:
+    return F
   else:
-    return factor_special_forms(n)
+    F2 = []
+    Q = []
+    for f in factor_special_forms(n):
+      if is_prime(f):
+        F2.append(f)
+      else:
+        Q.append(f)
+    last_f = 0
+    while len(Q) > 0:
+      f = Q.pop()
+      if log10(f) < c:
+        print("trial facoring: %d cutoff %d" % (f,c))
+        tmp = trial_factor(f)
+        for ft in tmp:
+          if is_prime(ft):
+            print("Found prime:",ft)
+            F2 += [ft]
+          else:
+            Q += [ft]
+      else:
+        print("pollard_rho: %d" % f)
+        p = pollard_rho(f,seed=random.randint(2, 1 << int(log2(f))),limit=100000)
+        #if last_p == p: 
+        #  F2 += [f]
+        #  break
+        q = f // p
+        #last_p = p
+        print("Found factor: %d" % p)
+        if q > 1:
+          if is_prime(p):
+            print("Found prime:", p)
+            F2 += [p]
+          else:
+            Q += [p]
+          if is_prime(q):
+            print("Found prime: ",p)
+            F2 += [q]
+          else:
+            Q += [q]
+        else:
+        #if last_f == f:
+          F2 += [f]
+        #last_f = f
+    return [int(p) for p in sorted(F2)]
 
 from gmpy2 import *
 import random
