@@ -452,7 +452,7 @@ def factor_special_forms(n):
         else:
           return [p, q]
       elif power > 2:
-        print("Form 2^n-1 with n composite and odd")
+        print("Form base^n-1 with n composite and odd")
         r = n
         F = trial_factor(power)
         p = base - 1
