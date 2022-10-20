@@ -8,7 +8,7 @@ f = FSF(exp)
 n1 = list_prod(f)
 #print(n,f,n1)
 #print(f)
+print(f,len(f))
 assert n == n1
-print(f)
 
 

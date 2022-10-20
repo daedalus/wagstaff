@@ -1,13 +1,11 @@
-base = 2
-power = 5
+from gmpy2 import *
+from algos import *
+import sys
 
-#if power == 5:
-tmp = 0
-for i in range(0, power):
-  tmp += ((-1) ** i) *  base ** i
-  
-print(base + 1, base ** 4 - base ** 3 + base ** 2 - base + 1)
-print(tmp)
-
-#return factor_special_forms(p) + factor_special_forms(q)
+p = 2
+while p <= 4093:
+  f = factor_special_forms(2**p-1)
+  if len(f) > 1:
+    print(p, f)
+  p = next_prime(p)
 

@@ -390,7 +390,11 @@ def factor_special_forms(n):
   if is_square(n):
     print("Square found:",n)
     i2 = isqrt(n)
-    return [i2,i2]
+    if is_prime(i2):
+      return [i2,i2]
+    else:
+      f = factor_special_forms(i2)
+      return f + f
   print("factor_special_forms",n)
 
   #pqi = factor_perfect(n)
@@ -412,69 +416,90 @@ def factor_special_forms(n):
   if bpm1 != None:
     base, power, pm1 = bpm1
     if pm1 == -1:
-      print(base, "^", power,pm1)
+      print(base, "^", power,pm1, (power-3) % 4)
       # Form 2^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1) 
       #if base == 2 and is_prime(power) and (power - 3) % 4 == 0:
       if is_prime(power) and (power - 3) % 4 == 0:
         print("Form base^p-1 and p = 3 (mod 4) ==> n//(2p+1),(2p+1)")
         p2 = (power << 1) + 1
-        print(p2)
-        if is_prime(p2):
+        if is_prime(p2) and n % p2 == 0:
           return [p2] + factor_special_forms(n // p2)
         else:
-          p = base-1; q = n//p
-          return [p] + [q]
-      # Form b^2m − 1 = (b^m − 1)(b^m + 1)
-      if power & 1 == 0:
-        print("Form b^2m − 1 = (b^m − 1)(b^m + 1)")
-        if power == 6:
-          print("(x-1)(x+1)(x^2-x+1)(x^2+x+1)")
-          b2 = base ** 2
-          p,q,r,s = base - 1, base + 1, b2 + base + 1, b2 - base +1 
-          return factor_special_forms(p) + factor_special_forms(q) + factor_special_forms(r) + factor_special_forms(s)
-        else:
-          p2 = power >> 1
-          bp2 = base ** p2
-          return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
-        #return [(1 << p2)-1, bp2 + 1]
-      if is_prime(power):
-        print("form 2^p-1 where p is prime")
-        #p,q = base - 1, base ** 4 + base ** 3 + base ** 2 + base + 1
-        p = base - 1
-        q = 0
-        for i in range(0, power):
-          q += (base ** i)
-          #print(base,i)
-        #print(p,q)
-        if p > 1:
-          return factor_special_forms(p) + factor_special_forms(q)
-        else:
-          return [p, q]
-      elif power > 2:
-        print("Form base^n-1 with n composite and odd")
-        r = n
-        F = trial_factor(power)
-        p = base - 1
-        r //= p
-        Q=[]
-        #print(F)
-        for f in F:
-          #print(f)
+          p = base - 1; q = n // p
+          if p > 1:
+            return [p] + [q]
+          else:
+            return [q]
+      else:
+        if is_prime(power):
+          print("form 2^p-1 where p is prime")
+          #p,q = base - 1, base ** 4 + base ** 3 + base ** 2 + base + 1
+          p = base - 1
           q = 0
-          for i in range(0, f):
+          for i in range(0, power):
             q += (base ** i)
-          print("Found prime:",q)
-          r //= q        
-          Q.append(q)
-        #print(Q)
-        #if p > 1:
-        return factor_special_forms(p) + Q + factor_special_forms(r)
-        
+            #print(base,i)
+          #print(p,q)
+          if p > 1:
+            return factor_special_forms(p) + factor_special_forms(q)
+          else:
+            return [q]
+        else:
+          # Form b^2m − 1 = (b^m − 1)(b^m + 1)
+          if power & 1 == 0:
+            print("Form b^2m − 1 = (b^m − 1)(b^m + 1)")
+            if power == 6:
+              print("(x-1)(x+1)(x^2-x+1)(x^2+x+1)")
+              b2 = base ** 2
+              p,q,r,s = base - 1, base + 1, b2 + base + 1, b2 - base +1 
+              return factor_special_forms(p) + factor_special_forms(q) + factor_special_forms(r) + factor_special_forms(s)
+            else:
+              p2 = power >> 1
+              bp2 = base ** p2
+              return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
+          #return [(1 << p2)-1, bp2 + 1]
+          elif power > 2:
+            print("Form base^n-1 with n composite and odd")
+            r = n
+            F = trial_factor(power)
+            p = base - 1
+            r //= p
+            Q = []
+            #print(F)
+            for f in set(F):
+              #print(f)
+              q = 0
+              for i in range(0, f):
+                q += (base ** i)
+              print("Found prime:",q)
+              r //= q        
+              Q.append(q)
+            #print(Q,p,q)
+            #if p > 1:
+            return factor_special_forms(p) + Q + factor_special_forms(r)  
     else:
       print(base, "^", power,"+",pm1)
       if (2 ** int(log2(power)) == power):
         print("Form base^(2^n) + 1")
-        return [n]
+        #return [n]
+        if (n - 1) % 4 == 0:
+          print("Form 4n^4+1")
+          x = (n - 1) >> 2
+          y, z = iroot(x, 4)
+          if z:
+            #print(x, y, z)
+            a, b, c = (y * y) << 1, (y << 1), 1
+            #print(a, b, c) 
+            p, q = a + b + c, a - b + c
+            #print(n, p, q)
+            if p*q == n:
+              return factor_special_forms(p) + factor_special_forms(q)
+            else:
+              return [n]
+          else:
+            return [n]
+        else:
+          return [n]
       # Form 2^n + 1 where n = -2 (mod 4)
       if (base == 2) and (power + 2) % 4 == 0:
         print("Form 2^n + 1 where n = -2 (mod 4)")
@@ -511,24 +536,15 @@ def factor_special_forms(n):
           p = base + 1
           q = n // p
           return factor_special_forms(p) + factor_special_forms(q)
-        #else:
-        #  print("Form base^n + 1 where n is composite and even")
-        #  p = base**2 + 1
-        #  q = n // p
-        #  return factor_special_forms(p) + factor_special_forms(q)
-      #if base == 3:
-      #  j = 0
-      #  x = 0
-      #  while x != power and x <= n:
-      #    j += 1 
-      #    x = 3 * ((j << 1) - 1)
-      #    print(n, j, x)
-      #  j21 = (j << 1) - 1
-      #  bj21 = base ** j21
-      #  bj = base ** j
-      #  p, q = bj21 - bj + 1,  bj21 + bj +1
-      #  return [p, q]
-  #return [n]
+        else:
+          print("Form base^n + 1 where n is composite and even")
+          _p = sum([1 for f in trial_factor(power) if f == 2])
+          #print("p",_p)
+          p = base ** (2**_p) + 1 
+          q = n // p
+          return factor_special_forms(p) + factor_special_forms(q)
+          #return [p,q]
+ 
   pqi = factor_perfect(n)
   if pqi != [] and pqi[0] > 1:
       #print(pqi)
@@ -576,50 +592,51 @@ def FSF(exp):
   if F != None and (F[0] * F[1]) == n:
     return F
   else:
-    F2 = []
-    Q = []
-    for f in factor_special_forms(n):
-      if is_prime(f):
-        F2.append(f)
-      else:
-        Q.append(f)
-    last_f = 0
-    while len(Q) > 0:
-      f = Q.pop()
-      if log10(f) < c:
-        print("trial facoring: %d cutoff %d" % (f,c))
-        tmp = trial_factor(f)
-        for ft in tmp:
-          if is_prime(ft):
-            print("Found prime:",ft)
-            F2 += [ft]
-          else:
-            Q += [ft]
-      else:
-        print("pollard_rho: %d" % f)
-        p = pollard_rho(f,seed=random.randint(2, 1 << int(log2(f))),limit=100000)
-        #if last_p == p: 
-        #  F2 += [f]
-        #  break
-        q = f // p
-        #last_p = p
-        print("Found factor: %d" % p)
-        if q > 1:
-          if is_prime(p):
-            print("Found prime:", p)
-            F2 += [p]
-          else:
-            Q += [p]
-          if is_prime(q):
-            print("Found prime: ",p)
-            F2 += [q]
-          else:
-            Q += [q]
+    return factor_special_forms(eval(exp))
+
+def postprocess_factors(F):
+  for f in F:
+    if is_prime(f):
+      F2.append(f)
+    else:
+      Q.append(f)
+  last_f = 0
+  while len(Q) > 0:
+    f = Q.pop()
+    if log10(f) < c:
+      print("trial facoring: %d cutoff %d" % (f,c))
+      tmp = trial_factor(f)
+      for ft in tmp:
+        if is_prime(ft):
+          print("Found prime:",ft)
+          F2 += [ft]
         else:
-        #if last_f == f:
-          F2 += [f]
-        #last_f = f
-    return [int(p) for p in sorted(F2)]
+          Q += [ft]
+    else:
+      print("pollard_rho: %d" % f)
+      p = pollard_rho(f,seed=random.randint(2, 1 << int(log2(f))),limit=100000)
+      #if last_p == p: 
+      #  F2 += [f]
+      #  break
+      q = f // p
+      #last_p = p
+      print("Found factor: %d" % p)
+      if q > 1:
+        if is_prime(p):
+          print("Found prime:", p)
+          F2 += [p]
+        else:
+          Q += [p]
+        if is_prime(q):
+          print("Found prime: ",p)
+          F2 += [q]
+        else:
+          Q += [q]
+      else:
+      #if last_f == f:
+        F2 += [f]
+      #last_f = f
+  return [int(p) for p in sorted(F2)]
 
 from gmpy2 import *
 import random
