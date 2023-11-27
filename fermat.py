@@ -21,11 +21,11 @@ def lehmer(n):
         raise FactorizationError
     y = 1
     c= 0
-    while not is_square(n + y * y):
+    while not is_square(n + y**2):
         y += 1
         c+=1
-    x = isqrt(n + y * y)
-    print(c, x, x*x, y, y*y)
+    x = isqrt(n + y**2)
+    print(c, x, x*x, y, y**2)
     return x - y, x + y
 
 

@@ -11,9 +11,9 @@ def find_period_1p(p):
 def A002371(L):
   A=[]
   p = 1
-  for i in range(0,L):
+  for _ in range(0,L):
     p = next_prime(p)
-    if p == 5 or p == 2:
+    if p in [5, 2]:
       A.append(0)
     else:
       A.append(find_period_1p(p))
@@ -66,15 +66,12 @@ def euler_criterion_is_prime(p):
     
 def phi(n):
   """ Slow version of euler totient function """
-  if is_prime(n):
-    return n - 1
-  return sum([1 for i in range(1, n) if gcd(i, n) == 1])
+  return n - 1 if is_prime(n) else sum(1 for i in range(1, n) if gcd(i, n) == 1)
 
 
 def primitiveroot(m):
   t = phi(m)
-  g = 0
-  return sum(1 for g in range(2, t) if fastpowmod(g, t, m) == 1)
+  return sum(1 for _ in range(2, t) if fastpowmod(0, t, m) == 1)
     #print(g,t,m)
   #  g+=1
   #return g
@@ -115,42 +112,38 @@ def Legendre(a, p):
 
 
 def tonelli(r,p):
-    """ 
+  """ 
     Tonelli Modular Square Root:
     Not the most efficient implementation but mine 
     """
-    assert legendre(r,p) == 1
-    f = p - 1
-    e = 0
+  assert legendre(r,p) == 1
+  f = p - 1
+  e = 0
 
-    while f & 1 == 0:
-        f >>= 1
-        e += 1
-   
-    if e == 1:
-      x = pow(r, (p + 1) >> 2, p)
-      return x, p - x
+  while f & 1 == 0:
+      f >>= 1
+      e += 1
 
-    for n in range(2, p):
-        if legendre(n, p) == -1:
-            break
-
-    R = pow(r, f, p)
-    N = pow(n, f, p)
-    j = 0
-
-    for i in range(1, e):
-       RNp = (R * N) % p
-       x = pow(RNp, j, p)
-       y = pow(2, (e - i - 1), p)
-       w = pow(x , y, p) 
-       if w == 1:
-         j += (1 << i)
-       else:
-         j += i << 1
-
-    x = (pow(r, (f + 1) >> 1, p) * pow(N, j >> 1, p)) % p
+  if e == 1:
+    x = pow(r, (p + 1) >> 2, p)
     return x, p - x
+
+  for n in range(2, p):
+      if legendre(n, p) == -1:
+          break
+
+  R = pow(r, f, p)
+  N = pow(n, f, p)
+  j = 0
+
+  for i in range(1, e):
+    RNp = (R * N) % p
+    x = pow(RNp, j, p)
+    y = pow(2, (e - i - 1), p)
+    w = pow(x , y, p)
+    j += (1 << i) if w == 1 else i << 1
+  x = (pow(r, (f + 1) >> 1, p) * pow(N, j >> 1, p)) % p
+  return x, p - x
 
 
 def verify_tonelli(x, r, p):
@@ -166,8 +159,7 @@ def verify_tonelli(x, r, p):
 
 def hensel_lift(x, r, p):
   t = invert(x << 1, p) * ((r - x ** 2) // p)
-  y = x + t * p
-  return y
+  return x + t * p
 
 
 def tonelli_p2(r, p):
@@ -251,8 +243,8 @@ def lehman(N, k, r):
       i1 += 2
       u += (x + 1) << 2
       x += 2
-   
-  for i in range(i1, j + 1, w):
+
+  for _ in range(i1, j + 1, w):
     if is_square(u):
       y = isqrt(u)
       g = gcd(x-y, N) 
@@ -280,7 +272,7 @@ def _is_power(n):
   if (n == 1):
     return True
   i = 2
-  while(i * i <= n):
+  while i**2 <= n:
     val = math.log(n) / math.log(i)
     if val == int(val):
       return True
@@ -310,14 +302,12 @@ def A0(L):
 def _cunningham_pm1(n):
   if is_power(n-1):
     return 1
-  if is_power(n+1):
-    return -1
-  return 0
+  return -1 if is_power(n+1) else 0
 
 import math
 def basepow(n):
   base = 2
-  while (base * base <= n):
+  while base**2 <= n:
     power = log(n) / log(base)
     ipower = int(power)
     if (abs(power - ipower)) < 0.00000001 and pow(base, ipower, n) == 0:
@@ -328,10 +318,7 @@ def cunningham_decompose(n):
   pm1 = _cunningham_pm1(n)
   if pm1 != 0:
     base, power = basepow(n - pm1)
-    if base ** power + pm1 == n:
-      return base, power, pm1
-    else:
-      return None
+    return (base, power, pm1) if base ** power + pm1 == n else None
 
 #print(cunningham_decompose((2 ** 58) + 1))
 
@@ -355,19 +342,14 @@ def factor_perfect(n):
     q >>= 1
     i += 1
   p = (1 << i)
-  if ((i << 1) + 1) == q:
-    return p, q, i
-  else:
-    return p, q, -1
-  return []
+  return (p, q, i) if ((i << 1) + 1) == q else (p, q, -1)
 
 
 def trial_factor(n):
   factors=[]
   tmp = n
   p = 2
-  #for i in range(2, isqrt(n)+1):
-  while (p <= isqrt(n) + 1): 
+  while p <= isqrt(tmp) + 1: 
     if tmp % p == 0:
       while tmp % p == 0:
         tmp //= p
@@ -383,7 +365,7 @@ def factor_special_forms(n):
   it will recursively factor numbers of the form b^m+-1 or x^2y-y^2x
   """
   if n == 1:
-    return [1] 
+    return [1]
   if is_prime(n):
     print("Prime found:",n)
     return [n]
@@ -392,9 +374,8 @@ def factor_special_forms(n):
     i2 = isqrt(n)
     if is_prime(i2):
       return [i2,i2]
-    else:
-      f = factor_special_forms(i2)
-      return f + f
+    f = factor_special_forms(i2)
+    return f + f
   print("factor_special_forms",n)
 
   #pqi = factor_perfect(n)
@@ -424,26 +405,17 @@ def factor_special_forms(n):
         p2 = (power << 1) + 1
         if is_prime(p2) and n % p2 == 0:
           return [p2] + factor_special_forms(n // p2)
-        else:
-          p = base - 1; q = n // p
-          if p > 1:
-            return [p] + [q]
-          else:
-            return [q]
+        p = base - 1
+        q = n // p
+        return [p] + [q] if p > 1 else [q]
       else:
         if is_prime(power):
           print("form 2^p-1 where p is prime")
           #p,q = base - 1, base ** 4 + base ** 3 + base ** 2 + base + 1
           p = base - 1
-          q = 0
-          for i in range(0, power):
-            q += (base ** i)
-            #print(base,i)
+          q = sum((base ** i) for i in range(0, power))
           #print(p,q)
-          if p > 1:
-            return factor_special_forms(p) + factor_special_forms(q)
-          else:
-            return [q]
+          return factor_special_forms(p) + factor_special_forms(q) if p > 1 else [q]
         else:
           # Form b^2m − 1 = (b^m − 1)(b^m + 1)
           if power & 1 == 0:
@@ -457,7 +429,6 @@ def factor_special_forms(n):
               p2 = power >> 1
               bp2 = base ** p2
               return factor_special_forms(bp2 - 1) + factor_special_forms(bp2 + 1)
-          #return [(1 << p2)-1, bp2 + 1]
           elif power > 2:
             print("Form base^n-1 with n composite and odd")
             r = n
@@ -467,39 +438,30 @@ def factor_special_forms(n):
             Q = []
             #print(F)
             for f in set(F):
-              #print(f)
-              q = 0
-              for i in range(0, f):
-                q += (base ** i)
+              q = sum((base ** i) for i in range(0, f))
               print("Found prime:",q)
-              r //= q        
+              r //= q
               Q.append(q)
             #print(Q,p,q)
             #if p > 1:
-            return factor_special_forms(p) + Q + factor_special_forms(r)  
+            return factor_special_forms(p) + Q + factor_special_forms(r)
     else:
       print(base, "^", power,"+",pm1)
       if (2 ** int(log2(power)) == power):
         print("Form base^(2^n) + 1")
-        #return [n]
-        if (n - 1) % 4 == 0:
-          print("Form 4n^4+1")
-          x = (n - 1) >> 2
-          y, z = iroot(x, 4)
-          if z:
-            #print(x, y, z)
-            a, b, c = (y * y) << 1, (y << 1), 1
-            #print(a, b, c) 
-            p, q = a + b + c, a - b + c
-            #print(n, p, q)
-            if p*q == n:
-              return factor_special_forms(p) + factor_special_forms(q)
-            else:
-              return [n]
-          else:
-            return [n]
-        else:
+        if (n - 1) % 4 != 0:
           return [n]
+        print("Form 4n^4+1")
+        x = (n - 1) >> 2
+        y, z = iroot(x, 4)
+        if not z:
+          return [n]
+        #print(x, y, z)
+        a, b, c = (y * y) << 1, (y << 1), 1
+        #print(a, b, c) 
+        p, q = a + b + c, a - b + c
+            #print(n, p, q)
+        return factor_special_forms(p) + factor_special_forms(q) if p*q == n else [n]
       # Form 2^n + 1 where n = -2 (mod 4)
       if (base == 2) and (power + 2) % 4 == 0:
         print("Form 2^n + 1 where n = -2 (mod 4)")
@@ -522,41 +484,33 @@ def factor_special_forms(n):
       #  return factor_special_forms(p) + factor_special_forms(q)
       if is_prime(power):
         print("base^p+1 where p is prime")
-        q = 0
         p = base + 1
-        for i in range(0, power):
-          q += ((-1) ** i) *  (base ** i)
-        if p > 1:
-          return factor_special_forms(p) + factor_special_forms(q)
-        else:
-          return p, q
+        q = sum(((-1) ** i) *  (base ** i) for i in range(0, power))
+        return factor_special_forms(p) + factor_special_forms(q) if p > 1 else (p, q)
       else:
         if power & 1 == 1:
-          print("Form base^n + 1 where n is composite and odd") 
+          print("Form base^n + 1 where n is composite and odd")
           p = base + 1
-          q = n // p
-          return factor_special_forms(p) + factor_special_forms(q)
         else:
           print("Form base^n + 1 where n is composite and even")
-          _p = sum([1 for f in trial_factor(power) if f == 2])
+          _p = sum(1 for f in trial_factor(power) if f == 2)
           #print("p",_p)
-          p = base ** (2**_p) + 1 
-          q = n // p
-          return factor_special_forms(p) + factor_special_forms(q)
-          #return [p,q]
- 
+          p = base ** (2**_p) + 1
+                  #return [p,q]
+
+        q = n // p
+        return factor_special_forms(p) + factor_special_forms(q)
   pqi = factor_perfect(n)
-  if pqi != [] and pqi[0] > 1:
-      #print(pqi)
-      if pqi[2] > 1:
-        print("Form (2^(p-1)*(2^p-1))")
-        return [pqi[0], pqi[1]]
-      else:
-        print("Form (2^n)*q")
-        return [pqi[0]] + factor_special_forms(pqi[1])
-        #return [pqi[0], pqi[1]]
+  if pqi == [] or pqi[0] <= 1:
+    return [n]
+  #print(pqi)
+  if pqi[2] > 1:
+    print("Form (2^(p-1)*(2^p-1))")
+    return [pqi[0], pqi[1]]
   else:
-    return [n] 
+    print("Form (2^n)*q")
+    return [pqi[0]] + factor_special_forms(pqi[1])
+    #return [pqi[0], pqi[1]] 
 
 
 def parse_exp(exp):
@@ -589,10 +543,8 @@ def FSF(exp):
   c = 10
   n = int(eval(exp))
   F = parse_exp(exp)
-  if F != None and (F[0] * F[1]) == n:
-    return F
-  else:
-    return factor_special_forms(eval(exp))
+  return (F if F != None and
+          (F[0] * F[1]) == n else factor_special_forms(eval(exp)))
 
 def postprocess_factors(F):
   for f in F:
@@ -644,7 +596,7 @@ import random
 def is_carmichael(n, k = 50):
   if is_prime(n):
     return False
-  for i in range(0,k):
+  for _ in range(0,k):
     a = random.randint(2, n - 1)
     if gcd(a,n) == 1:
       if not is_fermat_prp(n, a):
