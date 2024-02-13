@@ -36,8 +36,7 @@ def fastpowmod(n, e, m):
   y = 1
   z = n
   while e > 0:
-    if e & 1 == 1:
-      y *= z % m
+    y *= ((z % m) * (e & 1) + (e + 1) & 1)
     z = (z*z) % m
     e >>= 1
   return y % m
@@ -92,7 +91,7 @@ def Carmichael(n):
   l = int(log2(n))
   if (l > 2)  and (n == 2 ** l):
     print(n,l)
-    return 2 ** (l - 2)
+    return 1 << (l - 2)
   return phi(n)
 
 
